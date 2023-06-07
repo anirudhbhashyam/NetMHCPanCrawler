@@ -106,7 +106,7 @@ class NetMHCPanCrawler:
     peptides: str = None
     alleles: str = None
     
-    _jobid_regex: typing.ClassVar[str] = re.compile(r"(?<=jobid=)([A-Z0-9]+?&)")
+    _jobid_regex: typing.ClassVar[str] = re.compile(r"(?<=jobid=)([A-Z0-9]+?)&")
 
     def set_peptides(self, peptides: typing.Iterable[str]) -> None:
         if len(peptides) > 5000:
@@ -146,7 +146,7 @@ class NetMHCPanCrawler:
         self.driver.execute_script("arguments[0].scrollIntoView();", ba_checkbox)
         self.driver.execute_script("arguments[0].click();", ba_checkbox)
         self.driver.execute_script("document.querySelector('input[type=\"submit\"]').click();")
-        return re.search(self._jobid_regex, self.driver.current_url).group(1).replace("&", "")
+        return re.search(self._jobid_regex, self.driver.current_url).group(1)
     
     async def get_data(self, job_id: str, header_schema: typing.Iterable[str], data_path: str = DATA_PATH, overwrite: bool = False) -> pd.DataFrame | None:
         url_to_query = f"{self.mhc_data.results_url}?jobid={job_id}&wait=20"
@@ -319,11 +319,15 @@ async def run(args: NetMHCPanCrawlerArgs) -> pd.DataFrame:
 
     print(f"Submitted job: {job_id}. Waiting for results...")
 
-    while True:
+    max_time = 60 * 4
+    current_time = time.time()
+    elapsed_seconds = 0.0
+    while True or elapsed_seconds < max_time:
         data = await crawler.get_data(job_id, mhc_data.header_schema)
         if data is not None:
             break
         await asyncio.sleep(5)
+        elapsed_seconds = time.time() - current_time
 
     return data
 
