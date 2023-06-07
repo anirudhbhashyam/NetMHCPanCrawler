@@ -107,6 +107,7 @@ class NetMHCPanCrawler:
     alleles: str = None
     
     _jobid_regex: typing.ClassVar[str] = re.compile(r"(?<=jobid=)([A-Z0-9]+?)&")
+    _decimal_re: typing.ClassVar[str] = re.compile(r"[0-9]*\.?[0-9]*")
 
     def set_peptides(self, peptides: typing.Iterable[str]) -> None:
         if len(peptides) > 5000:
@@ -148,7 +149,7 @@ class NetMHCPanCrawler:
         self.driver.execute_script("document.querySelector('input[type=\"submit\"]').click();")
         return re.search(self._jobid_regex, self.driver.current_url).group(1)
     
-    async def get_data(self, job_id: str, header_schema: typing.Iterable[str], data_path: str = DATA_PATH, overwrite: bool = False) -> pd.DataFrame | None:
+    async def get_data(self, job_id: str, data_path: str = DATA_PATH, overwrite: bool = False) -> pd.DataFrame | None:
         url_to_query = f"{self.mhc_data.results_url}?jobid={job_id}&wait=20"
         filepath = data_path / f"{job_id}.csv"
         
@@ -169,17 +170,16 @@ class NetMHCPanCrawler:
             return 
         
         pre_text = pre_html_content.text
-        data_rows = list(self._parse_pre_text(pre_text, row_length = len(header_schema)))
-        df = pd.DataFrame(data_rows, columns = header_schema)
+        data_rows = list(self._parse_pre_text(pre_text, row_length = len(self.mhc_data.header_schema)))
+        df = pd.DataFrame(data_rows, columns = self.mhc_data.header_schema)
         await self._save_dtu_mhc_data(df, filepath, overwrite = overwrite)
         return df
     
     @staticmethod
     def _parse_pre_text(pre_text: str, row_length: int) -> typing.Iterator[list[str]]:
-        decimal_re = re.compile(r"[0-9]*\.?[0-9]*")
         for line in pre_text.split("\n"):
             if line.startswith(" " * 3):
-                row = [x for x in line.split() if x != " " and (x.isalpha() or re.match(decimal_re, x))]
+                row = [x for x in line.split() if x != " " and (x.isalpha() or re.match(self._decimal_re, x))]
                 if len(row) < row_length:
                     row += ["None"] * (row_length - len(row))
                 elif len(row) > row_length:
@@ -188,8 +188,12 @@ class NetMHCPanCrawler:
 
     @staticmethod
     async def _save_dtu_mhc_data(df: pd.DataFrame, filepath: PathType, overwrite: bool = False) -> None:
+        if not isinstance(filepath, Path):
+            filepath = Path(filepath)
+
         if (not filepath.exists() and not df.empty) or overwrite:
             df.to_csv(filepath)
+
         await asyncio.sleep(0.1)
 
 
@@ -265,7 +269,7 @@ def process_args() -> argparse.Namespace:
         "-df",
         type = str,
         default = "./chromedriver",
-        help = "The path to the chromedriver.",
+        help = "The path to the browser driver.",
     )
 
     processor.add_argument(
@@ -282,13 +286,13 @@ def process_args() -> argparse.Namespace:
 
 def init_selenium(browser_binary_filepath: PathType, driver_filepath: PathType) -> webdriver.Chrome:
     options = Options()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.page_load_strategy = "eager"
     options.binary_location = str(browser_binary_filepath)
     return webdriver.Chrome(str(driver_filepath), options = options)
 
 
-async def run(args: NetMHCPanCrawlerArgs) -> pd.DataFrame:
+async def run(args: NetMHCPanCrawlerArgs | argparse.Namespace) -> pd.DataFrame:
     driver = init_selenium(
         Path(args.browser_binary_filepath),
         Path(args.driver_filepath)
@@ -319,15 +323,15 @@ async def run(args: NetMHCPanCrawlerArgs) -> pd.DataFrame:
 
     print(f"Submitted job: {job_id}. Waiting for results...")
 
-    max_time = 60 * 4
-    current_time = time.time()
+    wait_start_time = time.time()
     elapsed_seconds = 0.0
+    max_time = 60 * 4
     while True or elapsed_seconds < max_time:
-        data = await crawler.get_data(job_id, mhc_data.header_schema)
+        data = await crawler.get_data(job_id)
         if data is not None:
             break
         await asyncio.sleep(5)
-        elapsed_seconds = time.time() - current_time
+        elapsed_seconds += time.time() - wait_start_time
 
     return data
 
