@@ -187,19 +187,20 @@ class NetMHCPanCrawler:
                 yield row
 
     @staticmethod
-    async def _save_dtu_mhc_data(df: pd.DataFrame, filepath: Path, overwrite: bool = False) -> None:
+    async def _save_dtu_mhc_data(df: pd.DataFrame, filepath: PathType, overwrite: bool = False) -> None:
         if (not filepath.exists() and not df.empty) or overwrite:
             df.to_csv(filepath)
         await asyncio.sleep(0.1)
 
 
-def read_txt(filepath: Path) -> list[str] | None:
+def read_txt(filepath: PathType) -> list[str] | None:
     try:
         with open(filepath, "r") as f:
             return f.read().splitlines()
     except FileNotFoundError:
         return 
-    
+
+
 def process_hla_prediction_data(
     peptide_hla_prediction_results: pd.DataFrame, 
     threshold: float, 
@@ -279,7 +280,7 @@ def process_args() -> argparse.Namespace:
     return processor.parse_args()
 
 
-def init_selenium(browser_binary_filepath: Path, driver_filepath: Path) -> webdriver.Chrome:
+def init_selenium(browser_binary_filepath: PathType, driver_filepath: PathType) -> webdriver.Chrome:
     options = Options()
     # options.add_argument("--headless")
     options.page_load_strategy = "eager"
