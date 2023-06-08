@@ -123,15 +123,12 @@ def read_txt(filepath: PathType) -> list[str] | None:
         return
 
 
-async def _save_dtu_mhc_data(df: pd.DataFrame, filepath: PathType, overwrite: bool = False) -> None:
+def save_data(df: pd.DataFrame, filepath: PathType) -> None:
     if not isinstance(filepath, Path):
         filepath = Path(filepath)
 
-    if (not filepath.exists() and not df.empty) or overwrite:
+    if not filepath.exists() and not df.empty:
         df.to_csv(filepath)
-
-    await asyncio.sleep(0.1)
-
 
 
 def process_hla_prediction_data(
