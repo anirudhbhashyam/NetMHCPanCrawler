@@ -1,3 +1,5 @@
+import asyncio
+
 from bs4 import BeautifulSoup
 
 from dataclasses import dataclass
@@ -17,6 +19,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common import exceptions
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import Select
+
+import time
 
 import typing
 
@@ -70,6 +74,18 @@ class NetMHCPanCrawler:
         self.driver.execute_script("arguments[0].click();", ba_checkbox)
         self.driver.execute_script("document.querySelector('input[type=\"submit\"]').click();")
         return re.search(self._jobid_regex, self.driver.current_url).group(1)
+
+    async def query_job(self, job_id: str) -> pd.DataFrame | None:
+        wait_start_time = time.time()
+        elapsed_seconds = 0.0
+        max_time = 60 * 4
+        while elapsed_seconds < max_time:
+            data = await self.get_data(job_id)
+            if data is not None:
+                break
+            await asyncio.sleep(5)
+            elapsed_seconds += time.time() - wait_start_time
+        return data
     
     async def get_data(self, job_id: str, data_path: str = None) -> pd.DataFrame | None:
         url_to_query = f"{self.mhc_data.results_url}?jobid={job_id}&wait=20"
