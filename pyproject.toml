@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=67.7.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project]
+name = "netmhcpan"
+version = "1.0.0"
+authors = [
+    {name = "Anirudh Bhashyam"}
+]
+description = "A python package to crawl the NetMHCpan server(s)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4",
+    "httpx",
+    "pandas",
+    "selenium",
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.scripts]
+netmhc = "netmhcpan.app:main"
