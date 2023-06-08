@@ -24,14 +24,15 @@ def process_args() -> argparse.Namespace:
         "-p",
         "--peptides_filepath",
         required = True,
-        help = "The peptides to predict.",
+        help = "The peptides to predict. Must be a txt file with new line separated peptides.",
     )
 
     processor.add_argument(
         "-a",
         "--alleles_filepath",
         required = True,
-        help = "The alleles to predict.",
+        help = "The alleles to predict. Must be a txt file with new line separated alleles. "
+        "Additionally, the alleles must conform to the format and naming scheme adopted by NetMHCpan.",
     )
 
     processor.add_argument(
@@ -56,7 +57,15 @@ def process_args() -> argparse.Namespace:
         type = str,
         choices = ["I", "II"],
         default = "I",
-        help = "The MHC class for which prediction is done.",
+        help = "The MHC class for which prediction should be performed.",
+    )
+
+    processor.add_argument(
+        "--save_filepath",
+        "-sf",
+        type = str,
+        default = None,
+        help = "The filepath to save the results to. If not provided, the results will not be saved and will be written to stdout.",
     )
 
     return processor.parse_args()
@@ -70,7 +79,7 @@ def init_selenium(browser_binary_filepath: utils.PathType, driver_filepath: util
     return webdriver.Chrome(str(driver_filepath), options = options)
 
 
-async def run(args: utils.NetMHCPanCrawlerArgs | argparse.Namespace) -> pd.DataFrame:
+async def run(args: utils.NetMHCPanCrawlerArgs | argparse.Namespace) -> pd.DataFrame | None:
     driver = init_selenium(
         Path(args.browser_binary_filepath),
         Path(args.driver_filepath)
@@ -99,15 +108,7 @@ async def run(args: utils.NetMHCPanCrawlerArgs | argparse.Namespace) -> pd.DataF
 
     print(f"Submitted job: {job_id}. Waiting for results...")
 
-    wait_start_time = time.time()
-    elapsed_seconds = 0.0
-    max_time = 60 * 4
-    while elapsed_seconds < max_time:
-        data = await craw.get_data(job_id)
-        if data is not None:
-            break
-        await asyncio.sleep(5)
-        elapsed_seconds += time.time() - wait_start_time
+    data = await craw.query_job(job_id)
 
     return data
 
@@ -120,5 +121,8 @@ async def amain(args: argparse.Namespace) -> pd.DataFrame:
 def main() -> int:
     args = process_args()
     data = asyncio.run(amain(args))
-    print(data)
+    if not args.save_filepath:
+        print(data)
+    else:
+        utils.save_data(data, args.save_filepath)
     return 0
