@@ -2,9 +2,11 @@ from dataclasses import dataclass
 
 import enum
 
-import os
+import itertools
 
 import numpy as np
+
+import os
 
 import pandas as pd
 
@@ -164,3 +166,39 @@ def process_hla_prediction_data(
 
     return peptide_hla_prediction_hits[["MHC", "Score_BA", aff_col]]
 
+
+def n_gram_split(seq: str, n: int = 8) -> typing.Iterator[str]:
+    for i in range(len(seq) - n + 1):
+        yield seq[i : i + n]
+
+
+def create_peptide_space(peptide: str, n_low: int, n_high: int = None) -> typing.Iterator[str]:
+    for peptide in peptides:
+        if n_high is None:
+            n_high = len(peptide)
+        yield from n_gram_split(peptide, n_low, n_high)
+
+
+def create_peptides_world(peptides: typing.Iterable[str], n_low: int, n_high: int = None) -> typing.Iterator[str]:
+    for peptide in peptides:
+        yield from create_peptide_space(peptide, n_low, n_high)
+
+
+def parse_pre_text(pre_text: str, row_length: int) -> typing.Iterator[list[str]]:
+    for line in pre_text.split("\n"):
+        if line.startswith(" " * 3):
+            row = [x for x in line.split() if x != " " and (x.isalpha() or re.match(DECIMAL_RE, x))]
+            if len(row) < row_length:
+                row += ["None"] * (row_length - len(row))
+            elif len(row) > row_length:
+                row = row[: row_length]
+            yield row
+
+
+def split_sequence(optional_seq: str, option_delim: str = "/") -> typing.Iterator[str]:
+    s = optional_seq.split()
+    mask_s = {i: m.replace(option_delim, "") for i, m in enumerate(s) if option_delim in m}
+    for option_seq in itertools.product(*mask_s.values()):
+        for i, pos in enumerate(mask_s):
+            s[pos] = option_seq[i]
+        yield "".join(s)
