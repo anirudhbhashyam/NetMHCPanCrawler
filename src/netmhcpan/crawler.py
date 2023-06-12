@@ -27,8 +27,8 @@ import typing
 
 @dataclass
 class NetMHCPanCrawler:
-    driver: utils.WebDriverType
     mhc_data: utils.MHCClassData
+    driver: utils.WebDriverType = None
     peptides: str = None
     alleles: str = None
     
@@ -46,6 +46,8 @@ class NetMHCPanCrawler:
         self.alleles = ",".join(alleles)
 
     def _connect(self, url: str) -> None:
+        if self.driver is None:
+            raise ValueError("Driver is not set.")
         # set a timeout for the driver.
         self.driver.set_page_load_timeout(200)
         try:
@@ -73,18 +75,20 @@ class NetMHCPanCrawler:
         self.driver.execute_script("arguments[0].scrollIntoView();", ba_checkbox)
         self.driver.execute_script("arguments[0].click();", ba_checkbox)
         self.driver.execute_script("document.querySelector('input[type=\"submit\"]').click();")
+        time.sleep(5)
         return re.search(self._jobid_regex, self.driver.current_url).group(1)
 
     async def query_job(self, job_id: str) -> pd.DataFrame | None:
         wait_start_time = time.time()
         elapsed_seconds = 0.0
-        max_time = 60 * 4
+        max_time = 60 * 50
         while elapsed_seconds < max_time:
             data = await self.get_data(job_id)
             if data is not None:
                 break
             await asyncio.sleep(5)
             elapsed_seconds += time.time() - wait_start_time
+            print(f"Waited: {elapsed_seconds}s.")
         return data
     
     async def get_data(self, job_id: str, data_path: str = None) -> pd.DataFrame | None:
@@ -100,18 +104,17 @@ class NetMHCPanCrawler:
 
         soup = BeautifulSoup(request_data.text, "html.parser")
 
-        pre_html_content = soup.find("pre")
-
         if soup is None:
             return 
+
+        pre_html_content = soup.find("pre")
 
         if pre_html_content is None:
             return 
         
         pre_text = pre_html_content.text
         data_rows = list(self._parse_pre_text(pre_text, row_length = len(self.mhc_data.header_schema)))
-        df = pd.DataFrame(data_rows, columns = self.mhc_data.header_schema)
-        return df
+        return pd.DataFrame(data_rows, columns = self.mhc_data.header_schema)
     
     def _parse_pre_text(self, pre_text: str, row_length: int) -> typing.Iterator[list[str]]:
         for line in pre_text.split("\n"):
