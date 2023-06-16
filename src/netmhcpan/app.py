@@ -73,7 +73,8 @@ def process_args() -> argparse.Namespace:
 
 def init_selenium(browser_binary_filepath: utils.PathType, driver_filepath: utils.PathType) -> utils.WebDriverType:
     options = ChromeOptions()
-    options.add_argument("--headless")
+    # options.add_argument("--headless")
+    options.add_extension("/Users/anirudh/dev/net_mhc_crawler/Touch-VPNSecure-and-unlimited-VPN-proxy.crx")
     options.page_load_strategy = "eager"
     options.binary_location = str(browser_binary_filepath)
     return webdriver.Chrome(str(driver_filepath), options = options)
@@ -94,8 +95,8 @@ async def run(args: utils.NetMHCPanCrawlerArgs | argparse.Namespace) -> pd.DataF
     )
 
     craw = crawler.NetMHCPanCrawler(
-        driver,
-        mhc_data,
+        mhc_data = mhc_data,
+        driver = driver,
     )
 
     peptides = utils.read_txt(Path(args.peptides_filepath))
