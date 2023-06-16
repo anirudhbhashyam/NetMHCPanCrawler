@@ -172,18 +172,6 @@ def n_gram_split(seq: str, n: int = 8) -> typing.Iterator[str]:
         yield seq[i : i + n]
 
 
-def create_peptide_space(peptide: str, n_low: int, n_high: int = None) -> typing.Iterator[str]:
-    for peptide in peptides:
-        if n_high is None:
-            n_high = len(peptide)
-        yield from n_gram_split(peptide, n_low, n_high)
-
-
-def create_peptides_world(peptides: typing.Iterable[str], n_low: int, n_high: int = None) -> typing.Iterator[str]:
-    for peptide in peptides:
-        yield from create_peptide_space(peptide, n_low, n_high)
-
-
 def parse_pre_text(pre_text: str, row_length: int) -> typing.Iterator[list[str]]:
     for line in pre_text.split("\n"):
         if line.startswith(" " * 3):
