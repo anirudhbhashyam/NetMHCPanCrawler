@@ -11,6 +11,7 @@ from pathlib import Path
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service
 
 import sys
 
@@ -72,12 +73,12 @@ def process_args() -> argparse.Namespace:
 
 
 def init_selenium(browser_binary_filepath: utils.PathType, driver_filepath: utils.PathType) -> utils.WebDriverType:
-    options = ChromeOptions()
-    # options.add_argument("--headless")
-    options.add_extension("/Users/anirudh/dev/net_mhc_crawler/Touch-VPNSecure-and-unlimited-VPN-proxy.crx")
-    options.page_load_strategy = "eager"
-    options.binary_location = str(browser_binary_filepath)
-    return webdriver.Chrome(str(driver_filepath), options = options)
+    options_ = ChromeOptions()
+    # options_.add_argument("--headless")
+    options_.add_extension(r"C:\Users\bhash\dev\NetMHCPanCrawler\Touch-VPNSecure-and-unlimited-VPN-proxy.crx")
+    options_.page_load_strategy = "eager"
+    options_.binary_location = str(browser_binary_filepath)
+    return webdriver.Chrome(service = Service(str(driver_filepath)), options = options_)
 
 
 async def run(args: utils.NetMHCPanCrawlerArgs | argparse.Namespace) -> pd.DataFrame | None:
