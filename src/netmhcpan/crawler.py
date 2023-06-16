@@ -81,7 +81,7 @@ class NetMHCPanCrawler:
     async def query_job(self, job_id: str) -> pd.DataFrame | None:
         wait_start_time = time.time()
         elapsed_seconds = 0.0
-        max_time = 60 * 50
+        max_time = 60 * 500
         while elapsed_seconds < max_time:
             data = await self.get_data(job_id)
             if data is not None:
