@@ -114,14 +114,21 @@ class NetMHCPanCrawler:
         
         pre_text = pre_html_content.text
         data_rows = list(self._parse_pre_text(pre_text, row_length = len(self.mhc_data.header_schema)))
+        df = pd.DataFrame(data_rows, columns = self.mhc_data.header_schema)
         return pd.DataFrame(data_rows, columns = self.mhc_data.header_schema)
     
     def _parse_pre_text(self, pre_text: str, row_length: int) -> typing.Iterator[list[str]]:
         for line in pre_text.split("\n"):
-            if line.startswith(" " * 3):
-                row = [x for x in line.split() if x != " " and (x.isalpha() or re.match(self._decimal_re, x))]
-                if len(row) < row_length:
-                    row += ["None"] * (row_length - len(row))
-                elif len(row) > row_length:
-                    row = row[: row_length]
-                yield row
+            if line.startswith("-") or line.startswith("#") or line == "":
+                continue
+            if not line.strip()[0].isdigit():
+                continue
+
+            row = [x for x in line.split() if x != " " and (x.isalpha() or re.match(self._decimal_re, x))]
+            if len(row) < row_length:
+                row += ["None"] * (row_length - len(row))
+            elif len(row) > row_length:
+                row = row[: row_length]
+            yield row
+
+            
