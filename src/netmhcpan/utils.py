@@ -129,7 +129,7 @@ def save_data(df: pd.DataFrame, filepath: PathType) -> None:
     if not isinstance(filepath, Path):
         filepath = Path(filepath)
 
-    if not filepath.exists() and not df.empty:
+    if not df.empty:
         df.to_csv(filepath)
 
 
@@ -163,8 +163,8 @@ def process_hla_prediction_data(
     peptide_hla_prediction_hits = peptide_hla_prediction_hits\
         .set_index(new_index)\
         .drop(columns = ["full_sequence", "Peptide"])
-
-    return peptide_hla_prediction_hits[["MHC", "Score_BA", aff_col]]
+    
+    return peptide_hla_prediction_hits[["MHC", "Core", "Score_BA", aff_col]]
 
 
 def n_gram_split(seq: str, n: int = 8) -> typing.Iterator[str]:
