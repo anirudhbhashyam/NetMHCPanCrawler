@@ -40,7 +40,7 @@ def process_args() -> argparse.Namespace:
         "--browser_binary_filepath",
         "-bbf",
         type = str,
-        default = "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        required = True,
         help = "The path to the browser binary.",
     )
 
