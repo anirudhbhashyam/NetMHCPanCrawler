@@ -79,7 +79,7 @@ class NetMHCPanCrawler:
         return re.search(self._jobid_regex, self.driver.current_url).group(1)
 
     async def query_job(self, job_id: str) -> pd.DataFrame | None:
-        wait_start_time = time.time()
+        wait_start_time = time.monotonic()
         elapsed_seconds = 0.0
         max_time = 60 * 500
         while elapsed_seconds < max_time:
@@ -87,7 +87,7 @@ class NetMHCPanCrawler:
             if data is not None:
                 break
             await asyncio.sleep(5)
-            elapsed_seconds += time.time() - wait_start_time
+            elapsed_seconds += time.monotonic() - wait_start_time
             print(f"Waited: {elapsed_seconds}s.")
         return data
     
