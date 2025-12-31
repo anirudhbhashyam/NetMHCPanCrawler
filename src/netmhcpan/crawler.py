@@ -88,7 +88,7 @@ class NetMHCPanCrawler:
                 break
             await asyncio.sleep(5)
             elapsed_seconds += time.monotonic() - wait_start_time
-            print(f"Waited: {elapsed_seconds}s.")
+            print(f"Waited: {elapsed_seconds:.4f}s.")
         return data
     
     async def get_data(self, job_id: str, data_path: str = None) -> pd.DataFrame | None:
@@ -130,5 +130,3 @@ class NetMHCPanCrawler:
             elif len(row) > row_length:
                 row = row[: row_length]
             yield row
-
-            
