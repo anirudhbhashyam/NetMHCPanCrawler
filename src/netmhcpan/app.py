@@ -53,6 +53,14 @@ def process_args() -> argparse.Namespace:
     )
 
     processor.add_argument(
+        "--vpn_extension_filepath",
+        "-vef",
+        type = str,
+        default = None,
+        help = "The path to the VPN extension.",
+    )
+
+    processor.add_argument(
         "--mhc_class",
         "-mhc",
         type = str,
@@ -72,10 +80,11 @@ def process_args() -> argparse.Namespace:
     return processor.parse_args()
 
 
-def init_selenium(browser_binary_filepath: utils.PathType, driver_filepath: utils.PathType) -> utils.WebDriverType:
+def init_selenium(browser_binary_filepath: utils.PathType, driver_filepath: utils.PathType, vpn_extension_filepath: utils.PathType | None = None) -> utils.WebDriverType:
     options_ = ChromeOptions()
     # options_.add_argument("--headless")
-    options_.add_extension(r"C:\Users\bhash\dev\NetMHCPanCrawler\Touch-VPNSecure-and-unlimited-VPN-proxy.crx")
+    if vpn_extension_filepath is not None:
+        options_.add_extension(vpn_extension_filepath)
     options_.page_load_strategy = "eager"
     options_.binary_location = str(browser_binary_filepath)
     return webdriver.Chrome(service = Service(str(driver_filepath)), options = options_)
